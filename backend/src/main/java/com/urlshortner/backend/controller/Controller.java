@@ -1,12 +1,18 @@
 package com.urlshortner.backend.controller;
 
 import com.urlshortner.backend.entity.UrlMapping;
+import com.urlshortner.backend.pojo.UrlShort;
 import com.urlshortner.backend.service.UrlMappingService;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.net.URI;
+import java.net.http.HttpHeaders;
 
 @RestController
 @Slf4j
@@ -24,8 +30,8 @@ public class Controller {
 
 
     @PostMapping("/shorten")
-    @ResponseBody
-    public String shortenUrl(@RequestBody String originalUrl) {
+    public String shortenUrl(@RequestBody UrlShort urlShort) {
+        String originalUrl=urlShort.getUrl();
         logger.info("Received request to shorten URL: {}", originalUrl);
 
         // Extract the path part of the URL (not including the domain)
@@ -46,7 +52,7 @@ public class Controller {
     }
 
     @GetMapping("/{shortKey}")
-    public String redirectToOriginalUrl(@PathVariable String shortKey) {
+    public ResponseEntity<Object> redirectToOriginalUrl(@PathVariable String shortKey) {
         logger.info("Received request to redirect to original URL for short key: {}", shortKey);
 
         // get the original URL based on the short key
@@ -55,10 +61,11 @@ public class Controller {
         if (urlMapping != null) {
             String originalUrl = urlMapping.getOriginalUrl();
             logger.info("Redirecting to original URL: {}", originalUrl);
-            return "redirect:" + originalUrl;
+          return   ResponseEntity.status(HttpStatus.FOUND).location(URI.create(originalUrl)).build();
+
         } else {
             logger.warn("Short URL not found for short key: {}", shortKey);
-            return "Short URL not found";
+            return  ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
     }
 
